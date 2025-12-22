@@ -1,6 +1,6 @@
 #include "game.h"
 #include "ai.h"
-#include "graphics.h"
+#include "draw.h"
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
@@ -181,7 +181,7 @@ void game_update(void) {
         player1.vx *= 0.9f;
         player1.vy *= 0.9f;
     }
-
+	printf("play1.vx: %.2f, vy: %.2f\n", player1.vx, player1.vy);)
     player1.x += player1.vx;
     player1.y += player1.vy;
 
@@ -247,7 +247,7 @@ void game_update(void) {
         puck.vy = puck.vy / puck_speed * MAX_SPEED;
     }
 
-    // 边界处理
+    // 边界处理 - 现在函数已经声明了
     handle_boundaries();
 
     // 检查碰撞
@@ -261,12 +261,12 @@ void game_update(void) {
         handle_collision(&player2, &puck);
     }
 
-    // 检查进球
+    // 检查进球 - 现在函数已经声明了
     check_goals();
 }
 
 // 处理边界碰撞
-static void handle_boundaries(void) {
+void handle_boundaries(void) {
     // 边界反弹（排除球门区域）
     int is_near_goal1 = (puck.y > goal1.y && puck.y < goal1.y + goal1.height);
     int is_near_goal2 = (puck.y > goal2.y && puck.y < goal2.y + goal2.height);
@@ -305,7 +305,7 @@ static void handle_boundaries(void) {
 }
 
 // 检查进球
-static void check_goals(void) {
+void check_goals(void) {
     int goal_margin = 20; // 进球判定容差
 
     // 检查左侧进球（球门1）

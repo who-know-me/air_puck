@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "common.h"
+#include "../common/common.h"
 #include "game.h"
 #include "ai.h"
-#include "graphics.h"
+#include "draw.h"
 #include "input.h"
 #include "bluetooth.h"
 
@@ -17,6 +17,7 @@ static void on_touch(int x, int y, int type, int finger) {
     case TOUCH_PRESS:
     case TOUCH_MOVE:
         if (finger == 0 && x < screen_center_x) {
+            // 直接设置目标位置，不要添加延迟或平滑
             player1.target_x = x;
             player1.target_y = y;
 
@@ -83,7 +84,7 @@ static void on_bluetooth_data(const char* data) {
 static void game_timer_cb(int period) {
     if (game_state == GAME_PLAYING) {
         game_update();
-        graphics_draw();
+        draw_game();
 
         // 处理输入
         input_process();
@@ -100,4 +101,46 @@ static void connection_timer_cb(int period) {
     // 同步比分（如果蓝牙连接）
     if (is_bluetooth_mode) {
         char buffer[32];
-        snprintf(buffer, sizeof(buffer), "SCORE
+        snprintf(buffer, sizeof(buffer), "SCORE:%d,%d\n", player1.score, player2.score);
+        bluetooth_send(buffer);
+    }
+}
+
+int main(int argc, char* argv[]) {
+    // 初始化随机种子
+    srand(time(NULL));
+
+    // 初始化图形
+    draw_init();
+
+    // 初始化游戏
+    game_init();
+
+    // 初始化输入
+    if (input_init("/dev/input/event2") > 0) {
+        input_set_touch_callback(on_touch);
+    }
+
+    // 尝试初始化蓝牙
+    if (bluetooth_init("/dev/rfcomm0") > 0) {
+        bluetooth_set_callback(on_bluetooth_data);
+        is_bluetooth_mode = 1;
+        ai_set_enabled(0); // 蓝牙模式下禁用AI
+        printf("Running in Bluetooth mode\n");
+    }
+    else {
+        printf("Running in local mode (AI opponent)\n");
+    }
+
+    // 绘制初始画面
+    draw_game();
+
+    // 添加定时器
+    task_add_timer(16, game_timer_cb);      // ~60 FPS
+    task_add_timer(1000, connection_timer_cb);  // 每秒检查连接
+
+    // 进入主循环
+    task_loop();
+
+    return 0;
+}

@@ -1,15 +1,15 @@
-#include "graphics.h"
-#include "common.h"
+#include "draw.h"
+#include "../common/common.h"
 #include <stdio.h>
 
 // 图形初始化
-void graphics_init(void) {
+void draw_init(void) {
     fb_init("/dev/fb0");
     font_init("./font.ttc");
 }
 
 // 绘制游戏
-void graphics_draw(void) {
+void draw_game(void) {
     // 清屏
     fb_draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_BACKGROUND);
 
@@ -57,13 +57,13 @@ void graphics_draw(void) {
 }
 
 // 显示进球动画
-void graphics_show_goal_animation(void) {
+void draw_show_goal_animation(void) {
     fb_draw_text(screen_center_x - 60, screen_center_y - 30, "GOAL!", 48, COLOR_TEXT);
     fb_update();
 }
 
 // 显示胜利信息
-void graphics_show_win_message(int winner) {
+void draw_show_win_message(int winner) {
     if (winner == 1) {
         fb_draw_text(screen_center_x - 100, screen_center_y - 50,
             "Player 1 Wins!", 36, COLOR_PLAYER1);
