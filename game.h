@@ -73,6 +73,12 @@ void game_init(void);
 // 游戏逻辑更新
 void game_update(void);
 
+// 处理边界碰撞
+void handle_boundaries(void); 
+
+// 检查进球
+void check_goals(void);
+	
 // 游戏绘制
 void game_draw(void);
 

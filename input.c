@@ -1,5 +1,5 @@
 #include "input.h"
-#include "common.h"
+#include "../common/common.h"
 #include <stdio.h>
 #include <unistd.h>
 
