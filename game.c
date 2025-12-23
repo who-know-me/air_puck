@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// ÓÎÏ·È«¾Ö±äÁ¿¶¨Òå
+// æ¸¸æˆå…¨å±€å˜é‡å®šä¹‰
 GameState game_state = GAME_PLAYING;
 Player player1, player2;
 Puck puck;
@@ -15,7 +15,7 @@ int screen_center_x, screen_center_y;
 int field_width, field_height;
 int field_x, field_y;
 
-// »ñÈ¡µ±Ç°Ê±¼ä£¨Ãë£©
+// è·å–å½“å‰æ—¶é—´ï¼ˆç§’ï¼‰
 static float get_current_time(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -24,9 +24,9 @@ static float get_current_time(void) {
 
 static float last_time = 0;
 
-// ÓÎÏ·³õÊ¼»¯
+// æ¸¸æˆåˆå§‹åŒ–
 void game_init(void) {
-    // ¼ÆËãÇò³¡ÇøÓò
+    // è®¡ç®—çƒåœºåŒºåŸŸ
     screen_center_x = SCREEN_WIDTH / 2;
     screen_center_y = SCREEN_HEIGHT / 2;
     field_width = SCREEN_WIDTH - FIELD_PADDING * 2;
@@ -34,7 +34,7 @@ void game_init(void) {
     field_x = FIELD_PADDING;
     field_y = FIELD_PADDING;
 
-    // ³õÊ¼»¯Íæ¼Ò1 (×ó²à)
+    // åˆå§‹åŒ–ç©å®¶1 (å·¦ä¾§)
     player1.x = field_x + field_width * 0.25f;
     player1.y = screen_center_y;
     player1.target_x = player1.x;
@@ -44,7 +44,7 @@ void game_init(void) {
     player1.radius = PLAYER_RADIUS;
     player1.color = COLOR_PLAYER1;
 
-    // ³õÊ¼»¯Íæ¼Ò2 (ÓÒ²à)
+    // åˆå§‹åŒ–ç©å®¶2 (å³ä¾§)
     player2.x = field_x + field_width * 0.75f;
     player2.y = screen_center_y;
     player2.target_x = player2.x;
@@ -54,15 +54,15 @@ void game_init(void) {
     player2.radius = PLAYER_RADIUS;
     player2.color = COLOR_PLAYER2;
 
-    // ³õÊ¼»¯±ùÇò
+    // åˆå§‹åŒ–å†°çƒ
     puck.x = screen_center_x;
     puck.y = screen_center_y;
-    puck.vx = 3.0f;  // ¸ø±ùÇòÒ»¸ö³õÊ¼ËÙ¶È
+    puck.vx = 3.0f;  // ç»™å†°çƒä¸€ä¸ªåˆå§‹é€Ÿåº¦
     puck.vy = 2.0f;
     puck.radius = PUCK_RADIUS;
     puck.color = COLOR_PUCK;
 
-    // ³õÊ¼»¯ÇòÃÅ
+    // åˆå§‹åŒ–çƒé—¨
     goal1.x = field_x - GOAL_DEPTH;
     goal1.y = screen_center_y - GOAL_WIDTH / 2;
     goal1.width = GOAL_DEPTH;
@@ -75,13 +75,13 @@ void game_init(void) {
     goal2.height = GOAL_WIDTH;
     goal2.color = COLOR_GOAL;
 
-    // ³õÊ¼»¯AI
+    // åˆå§‹åŒ–AI
     ai_init();
 
     last_time = get_current_time();
 }
 
-// Åö×²¼ì²â
+// ç¢°æ’æ£€æµ‹
 int check_collision(float x1, float y1, float r1, float x2, float y2, float r2) {
     float dx = x2 - x1;
     float dy = y2 - y1;
@@ -89,23 +89,23 @@ int check_collision(float x1, float y1, float r1, float x2, float y2, float r2) 
     return distance < (r1 + r2);
 }
 
-// ´¦ÀíÎïÀíÅö×²
+// å¤„ç†ç‰©ç†ç¢°æ’
 void handle_collision(Player* player, Puck* puck) {
-    // ¼ÆËãÅö×²ÏòÁ¿
+    // è®¡ç®—ç¢°æ’å‘é‡
     float dx = puck->x - player->x;
     float dy = puck->y - player->y;
     float distance = sqrtf(dx * dx + dy * dy);
 
     if (distance == 0) return;
 
-    // ¹éÒ»»¯
+    // å½’ä¸€åŒ–
     dx /= distance;
     dy /= distance;
 
-    // ×îĞ¡¾àÀë
+    // æœ€å°è·ç¦»
     float min_distance = player->radius + puck->radius;
 
-    // Èç¹ûÖØµş£¬ÍÆ¿ª
+    // å¦‚æœé‡å ï¼Œæ¨å¼€
     if (distance < min_distance) {
         float overlap = min_distance - distance;
         puck->x += dx * overlap * 0.5f;
@@ -114,21 +114,21 @@ void handle_collision(Player* player, Puck* puck) {
         player->y -= dy * overlap * 0.5f;
     }
 
-    // ¼ÆËãÏà¶ÔËÙ¶È
+    // è®¡ç®—ç›¸å¯¹é€Ÿåº¦
     float relative_vx = puck->vx - player->vx;
     float relative_vy = puck->vy - player->vy;
 
-    // ÑØÅö×²·¨ÏßµÄËÙ¶È·ÖÁ¿
+    // æ²¿ç¢°æ’æ³•çº¿çš„é€Ÿåº¦åˆ†é‡
     float velocity_along_normal = relative_vx * dx + relative_vy * dy;
 
-    // Èç¹ûÎïÌåÕıÔÚ·ÖÀë£¬²»´¦Àí
+    // å¦‚æœç‰©ä½“æ­£åœ¨åˆ†ç¦»ï¼Œä¸å¤„ç†
     if (velocity_along_normal > 0) return;
 
-    // ¼ÆËã³åÁ¿
+    // è®¡ç®—å†²é‡
     float impulse = -(1.0f + COLLISION_DAMPING) * velocity_along_normal;
     impulse /= (1.0f / puck->radius + 1.0f / player->radius);
 
-    // Ó¦ÓÃ³åÁ¿
+    // åº”ç”¨å†²é‡
     float ix = impulse * dx;
     float iy = impulse * dy;
 
@@ -138,15 +138,15 @@ void handle_collision(Player* player, Puck* puck) {
     player->vy -= iy / player->radius;
 }
 
-// ÖØÖÃÓÎÏ·×´Ì¬£¨½øÇòºó£©
+// é‡ç½®æ¸¸æˆçŠ¶æ€ï¼ˆè¿›çƒåï¼‰
 void reset_after_goal(void) {
-    // ÖØÖÃ±ùÇòÎ»ÖÃ
+    // é‡ç½®å†°çƒä½ç½®
     puck.x = screen_center_x;
     puck.y = screen_center_y;
     puck.vx = 5.0f * (rand() % 2 ? 1 : -1);
     puck.vy = 5.0f * (rand() % 2 ? 1 : -1);
 
-    // ÖØÖÃÍæ¼ÒÎ»ÖÃ
+    // é‡ç½®ç©å®¶ä½ç½®
     player1.x = field_x + field_width * 0.25f;
     player1.y = screen_center_y;
     player1.vx = player1.vy = 0;
@@ -156,16 +156,16 @@ void reset_after_goal(void) {
     player2.vx = player2.vy = 0;
 }
 
-// ¸üĞÂÓÎÏ·Âß¼­
+// æ›´æ–°æ¸¸æˆé€»è¾‘
 void game_update(void) {
     float current_time = get_current_time();
     float delta_time = current_time - last_time;
     last_time = current_time;
 
-    // ÏŞÖÆdelta_time£¬±ÜÃâÒì³£Öµ
+    // é™åˆ¶delta_timeï¼Œé¿å…å¼‚å¸¸å€¼
     if (delta_time > 0.1f) delta_time = 0.1f;
 
-    // ¸üĞÂÍæ¼Ò1Î»ÖÃ
+    // æ›´æ–°ç©å®¶1ä½ç½®
     float dx = player1.target_x - player1.x;
     float dy = player1.target_y - player1.y;
     float distance = sqrtf(dx * dx + dy * dy);
@@ -181,17 +181,16 @@ void game_update(void) {
         player1.vx *= 0.9f;
         player1.vy *= 0.9f;
     }
-	printf("play1.vx: %.2f, vy: %.2f\n", player1.vx, player1.vy);)
     player1.x += player1.vx;
     player1.y += player1.vy;
 
-    // ÏŞÖÆÍæ¼ÒÔÚ¼º·½°ë³¡ÄÚ
+    // é™åˆ¶ç©å®¶åœ¨å·±æ–¹åŠåœºå†…
     if (player1.x > screen_center_x - player1.radius) {
         player1.x = screen_center_x - player1.radius;
         player1.vx = -player1.vx * 0.5f;
     }
 
-    // ±ß½ç¼ì²é
+    // è¾¹ç•Œæ£€æŸ¥
     if (player1.x < field_x + player1.radius) {
         player1.x = field_x + player1.radius;
         player1.vx = -player1.vx * 0.5f;
@@ -205,20 +204,20 @@ void game_update(void) {
         player1.vy = -player1.vy * 0.5f;
     }
 
-    // ¸üĞÂAI¿ØÖÆ£¨Èç¹û²»ÊÇÀ¶ÑÀÄ£Ê½£©
+    // æ›´æ–°AIæ§åˆ¶ï¼ˆå¦‚æœä¸æ˜¯è“ç‰™æ¨¡å¼ï¼‰
     ai_update(delta_time);
 
-    // ¸üĞÂÍæ¼Ò2Î»ÖÃ
+    // æ›´æ–°ç©å®¶2ä½ç½®
     player2.x += player2.vx;
     player2.y += player2.vy;
 
-    // ÏŞÖÆÍæ¼Ò2ÔÚ¼º·½°ë³¡ÄÚ
+    // é™åˆ¶ç©å®¶2åœ¨å·±æ–¹åŠåœºå†…
     if (player2.x < screen_center_x + player2.radius) {
         player2.x = screen_center_x + player2.radius;
         player2.vx = -player2.vx * 0.5f;
     }
 
-    // ±ß½ç¼ì²é
+    // è¾¹ç•Œæ£€æŸ¥
     if (player2.x > field_x + field_width - player2.radius) {
         player2.x = field_x + field_width - player2.radius;
         player2.vx = -player2.vx * 0.5f;
@@ -232,25 +231,25 @@ void game_update(void) {
         player2.vy = -player2.vy * 0.5f;
     }
 
-    // ¸üĞÂ±ùÇòÎ»ÖÃ
+    // æ›´æ–°å†°çƒä½ç½®
     puck.x += puck.vx;
     puck.y += puck.vy;
 
-    // Ó¦ÓÃÄ¦²ÁÁ¦
+    // åº”ç”¨æ‘©æ“¦åŠ›
     puck.vx *= FRICTION;
     puck.vy *= FRICTION;
 
-    // ÏŞÖÆ×î´óËÙ¶È
+    // é™åˆ¶æœ€å¤§é€Ÿåº¦
     float puck_speed = sqrtf(puck.vx * puck.vx + puck.vy * puck.vy);
     if (puck_speed > MAX_SPEED) {
         puck.vx = puck.vx / puck_speed * MAX_SPEED;
         puck.vy = puck.vy / puck_speed * MAX_SPEED;
     }
 
-    // ±ß½ç´¦Àí - ÏÖÔÚº¯ÊıÒÑ¾­ÉùÃ÷ÁË
+    // è¾¹ç•Œå¤„ç† - ç°åœ¨å‡½æ•°å·²ç»å£°æ˜äº†
     handle_boundaries();
 
-    // ¼ì²éÅö×²
+    // æ£€æŸ¥ç¢°æ’
     if (check_collision(player1.x, player1.y, player1.radius,
         puck.x, puck.y, puck.radius)) {
         handle_collision(&player1, &puck);
@@ -261,20 +260,20 @@ void game_update(void) {
         handle_collision(&player2, &puck);
     }
 
-    // ¼ì²é½øÇò - ÏÖÔÚº¯ÊıÒÑ¾­ÉùÃ÷ÁË
+    // æ£€æŸ¥è¿›çƒ - ç°åœ¨å‡½æ•°å·²ç»å£°æ˜äº†
     check_goals();
 }
 
-// ´¦Àí±ß½çÅö×²
+// å¤„ç†è¾¹ç•Œç¢°æ’
 void handle_boundaries(void) {
-    // ±ß½ç·´µ¯£¨ÅÅ³ıÇòÃÅÇøÓò£©
+    // è¾¹ç•Œåå¼¹ï¼ˆæ’é™¤çƒé—¨åŒºåŸŸï¼‰
     int is_near_goal1 = (puck.y > goal1.y && puck.y < goal1.y + goal1.height);
     int is_near_goal2 = (puck.y > goal2.y && puck.y < goal2.y + goal2.height);
 
     if (puck.x < field_x + puck.radius) {
-        // ×ó²à±ß½ç
+        // å·¦ä¾§è¾¹ç•Œ
         if (!is_near_goal1) {
-            // ²»ÔÚÇòÃÅÇøÓò£¬Õı³£·´µ¯
+            // ä¸åœ¨çƒé—¨åŒºåŸŸï¼Œæ­£å¸¸åå¼¹
             puck.x = field_x + puck.radius;
             puck.vx = -puck.vx * 0.9f;
             puck.vy += (rand() % 10 - 5) * 0.1f;
@@ -282,16 +281,16 @@ void handle_boundaries(void) {
     }
 
     if (puck.x > field_x + field_width - puck.radius) {
-        // ÓÒ²à±ß½ç
+        // å³ä¾§è¾¹ç•Œ
         if (!is_near_goal2) {
-            // ²»ÔÚÇòÃÅÇøÓò£¬Õı³£·´µ¯
+            // ä¸åœ¨çƒé—¨åŒºåŸŸï¼Œæ­£å¸¸åå¼¹
             puck.x = field_x + field_width - puck.radius;
             puck.vx = -puck.vx * 0.9f;
             puck.vy += (rand() % 10 - 5) * 0.1f;
         }
     }
 
-    // ÉÏÏÂ±ß½ç
+    // ä¸Šä¸‹è¾¹ç•Œ
     if (puck.y < field_y + puck.radius) {
         puck.y = field_y + puck.radius;
         puck.vy = -puck.vy * 0.9f;
@@ -304,26 +303,26 @@ void handle_boundaries(void) {
     }
 }
 
-// ¼ì²é½øÇò
+// æ£€æŸ¥è¿›çƒ
 void check_goals(void) {
-    int goal_margin = 20; // ½øÇòÅĞ¶¨Èİ²î
+    int goal_margin = 20; // è¿›çƒåˆ¤å®šå®¹å·®
 
-    // ¼ì²é×ó²à½øÇò£¨ÇòÃÅ1£©
+    // æ£€æŸ¥å·¦ä¾§è¿›çƒï¼ˆçƒé—¨1ï¼‰
     if (puck.x < field_x - puck.radius - goal_margin) {
-        // ÍêÈ«Ô½¹ı×ó²à±ß½ç
+        // å®Œå…¨è¶Šè¿‡å·¦ä¾§è¾¹ç•Œ
         if (puck.y > goal1.y - goal_margin && puck.y < goal1.y + goal1.height + goal_margin) {
-            // ½øÇòÓĞĞ§£¡
+            // è¿›çƒæœ‰æ•ˆï¼
             player2.score++;
             printf("Goal! Player2 scores! Score: %d - %d\n", player1.score, player2.score);
             reset_after_goal();
         }
     }
 
-    // ¼ì²éÓÒ²à½øÇò£¨ÇòÃÅ2£©
+    // æ£€æŸ¥å³ä¾§è¿›çƒï¼ˆçƒé—¨2ï¼‰
     if (puck.x > field_x + field_width + puck.radius + goal_margin) {
-        // ÍêÈ«Ô½¹ıÓÒ²à±ß½ç
+        // å®Œå…¨è¶Šè¿‡å³ä¾§è¾¹ç•Œ
         if (puck.y > goal2.y - goal_margin && puck.y < goal2.y + goal2.height + goal_margin) {
-            // ½øÇòÓĞĞ§£¡
+            // è¿›çƒæœ‰æ•ˆï¼
             player1.score++;
             printf("Goal! Player1 scores! Score: %d - %d\n", player1.score, player2.score);
             reset_after_goal();

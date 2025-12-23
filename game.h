@@ -3,7 +3,7 @@
 
 #include "../common/common.h"
 
-// ÓÎÏ·³£Á¿
+// ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½
 #define PLAYER_RADIUS       30
 #define PUCK_RADIUS         20
 #define GOAL_WIDTH          150
@@ -13,36 +13,39 @@
 #define FRICTION            0.98f
 #define MAX_SPEED           25.0f
 #define COLLISION_DAMPING   0.8f
-#define AI_THINK_INTERVAL   0.5f  // AIË¼¿¼¼ä¸ô£¨Ãë£©
+#define AI_THINK_INTERVAL   0.5f  // AIË¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë£©
 
-// ÑÕÉ«¶¨Òå
-#define COLOR_BACKGROUND    FB_COLOR(0x33, 0x66, 0x99)  // À¶É«±³¾°
-#define COLOR_PLAYER1       FB_COLOR(0xFF, 0x00, 0x00)  // ºìÉ« - Íæ¼Ò1
-#define COLOR_PLAYER2       FB_COLOR(0x00, 0xFF, 0x00)  // ÂÌÉ« - Íæ¼Ò2
-#define COLOR_PUCK          FB_COLOR(0xFF, 0xFF, 0xFF)  // °×É« - ±ùÇò
-#define COLOR_FIELD         FB_COLOR(0x66, 0xCC, 0xFF)  // Ç³À¶ - Çò³¡
-#define COLOR_GOAL          FB_COLOR(0x99, 0x99, 0x99)  // »ÒÉ« - ÇòÃÅ
-#define COLOR_CENTER_LINE   FB_COLOR(0xFF, 0xFF, 0xFF)  // °×É« - ÖÐÏß
-#define COLOR_TEXT          FB_COLOR(0xFF, 0xFF, 0xFF)  // °×É«ÎÄ×Ö
+#define FRAME_RATE 60       // 60 frames per second
+#define INPUT_DELAY 3       //delay input for 3 frames
 
-// ÓÎÏ·×´Ì¬
+// ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½
+#define COLOR_BACKGROUND    FB_COLOR(0x33, 0x66, 0x99)  // ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½
+#define COLOR_PLAYER1       FB_COLOR(0xFF, 0x00, 0x00)  // ï¿½ï¿½É« - ï¿½ï¿½ï¿½1
+#define COLOR_PLAYER2       FB_COLOR(0x00, 0xFF, 0x00)  // ï¿½ï¿½É« - ï¿½ï¿½ï¿½2
+#define COLOR_PUCK          FB_COLOR(0xFF, 0xFF, 0xFF)  // ï¿½ï¿½É« - ï¿½ï¿½ï¿½ï¿½
+#define COLOR_FIELD         FB_COLOR(0x66, 0xCC, 0xFF)  // Ç³ï¿½ï¿½ - ï¿½ï¿½
+#define COLOR_GOAL          FB_COLOR(0x99, 0x99, 0x99)  // ï¿½ï¿½É« - ï¿½ï¿½ï¿½ï¿½
+#define COLOR_CENTER_LINE   FB_COLOR(0xFF, 0xFF, 0xFF)  // ï¿½ï¿½É« - ï¿½ï¿½ï¿½ï¿½
+#define COLOR_TEXT          FB_COLOR(0xFF, 0xFF, 0xFF)  // ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½
+
+// ï¿½ï¿½Ï·×´Ì¬
 typedef enum {
     GAME_WAITING,
     GAME_PLAYING,
     GAME_PAUSED
 } GameState;
 
-// Íæ¼Ò½á¹¹Ìå
+// ï¿½ï¿½Ò½á¹¹ï¿½ï¿½
 typedef struct {
-    float x, y;           // µ±Ç°Î»ÖÃ
-    float target_x, target_y; // Ä¿±êÎ»ÖÃ
-    float vx, vy;         // ËÙ¶È
+    float x, y;           // ï¿½ï¿½Ç°Î»ï¿½ï¿½
+    float target_x, target_y; // Ä¿ï¿½ï¿½Î»ï¿½ï¿½
+    float vx, vy;         // ï¿½Ù¶ï¿½
     int score;
     int radius;
     int color;
 } Player;
 
-// ±ùÇò½á¹¹Ìå
+// ï¿½ï¿½ï¿½ï¿½á¹¹ï¿½ï¿½
 typedef struct {
     float x, y;
     float vx, vy;
@@ -50,7 +53,11 @@ typedef struct {
     int color;
 } Puck;
 
-// ÇòÃÅ½á¹¹Ìå
+typedef struct {
+    float input[INPUT_DELAY];
+}InputBuffer;
+
+// ï¿½ï¿½ï¿½Å½á¹¹ï¿½ï¿½
 typedef struct {
     float x, y;
     int width, height;
@@ -58,7 +65,7 @@ typedef struct {
     int color;
 } Goal;
 
-// ÓÎÏ·È«¾Ö±äÁ¿ÉùÃ÷
+// ï¿½ï¿½Ï·È«ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 extern GameState game_state;
 extern Player player1, player2;
 extern Puck puck;
@@ -67,28 +74,32 @@ extern int screen_center_x, screen_center_y;
 extern int field_width, field_height;
 extern int field_x, field_y;
 
-// ÓÎÏ·³õÊ¼»¯
+extern int frame_id;
+extern 
+
+
+// ï¿½ï¿½Ï·ï¿½ï¿½Ê¼ï¿½ï¿½
 void game_init(void);
 
-// ÓÎÏ·Âß¼­¸üÐÂ
+// ï¿½ï¿½Ï·ï¿½ß¼ï¿½ï¿½ï¿½ï¿½ï¿½
 void game_update(void);
 
-// ´¦Àí±ß½çÅö×²
+// ï¿½ï¿½ï¿½ï¿½ï¿½ß½ï¿½ï¿½ï¿½×²
 void handle_boundaries(void); 
 
-// ¼ì²é½øÇò
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void check_goals(void);
 	
-// ÓÎÏ·»æÖÆ
+// ï¿½ï¿½Ï·ï¿½ï¿½ï¿½ï¿½
 void game_draw(void);
 
-// Åö×²¼ì²â
+// ï¿½ï¿½×²ï¿½ï¿½ï¿½
 int check_collision(float x1, float y1, float r1, float x2, float y2, float r2);
 
-// Åö×²´¦Àí
+// ï¿½ï¿½×²ï¿½ï¿½ï¿½ï¿½
 void handle_collision(Player *player, Puck *puck);
 
-// ÖØÖÃÓÎÏ·×´Ì¬£¨½øÇòºó£©
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void reset_after_goal(void);
 
 #endif /* _GAME_H_ */

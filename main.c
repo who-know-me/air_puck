@@ -5,43 +5,13 @@
 #include "game.h"
 #include "ai.h"
 #include "draw.h"
-#include "input.h"
+#include "gameinput.h"
 #include "bluetooth.h"
 
 // 全局变量
 static int is_bluetooth_mode = 0;
 
-// 触摸事件回调
-static void on_touch(int x, int y, int type, int finger) {
-    switch (type) {
-    case TOUCH_PRESS:
-    case TOUCH_MOVE:
-        if (finger == 0 && x < screen_center_x) {
-            // 直接设置目标位置，不要添加延迟或平滑
-            player1.target_x = x;
-            player1.target_y = y;
 
-            // 如果蓝牙已连接，发送位置信息
-            if (is_bluetooth_mode) {
-                char buffer[32];
-                snprintf(buffer, sizeof(buffer), "POS:%.1f,%.1f\n", (float)x, (float)y);
-                bluetooth_send(buffer);
-            }
-        }
-        break;
-
-    case TOUCH_RELEASE:
-        if (finger == 0) {
-            player1.target_x = player1.x;
-            player1.target_y = player1.y;
-        }
-        break;
-
-    case TOUCH_ERROR:
-        printf("Touch device error\n");
-        break;
-    }
-}
 
 // 蓝牙数据回调
 static void on_bluetooth_data(const char* data) {
@@ -82,9 +52,13 @@ static void on_bluetooth_data(const char* data) {
 
 // 游戏定时器回调
 static void game_timer_cb(int period) {
+    //printf("game timer triggerred\n");
     if (game_state == GAME_PLAYING) {
+        //printf("[game timer]updating and drawing game.\n");
         game_update();
         draw_game();
+        //printf("[game timer]update and draw completed\n");
+        //printf("[game timer]switch to input process\n");
 
         // 处理输入
         input_process();
@@ -117,9 +91,19 @@ int main(int argc, char* argv[]) {
     game_init();
 
     // 初始化输入
-    if (input_init("/dev/input/event2") > 0) {
-        input_set_touch_callback(on_touch);
+    if (input_init("/dev/input/event2") < 0) {
+        printf("input init failed\n");
+        return;
     }
+    int fd = input_init("/dev/input/event2");
+    if(fd < 0){
+        printf("input init failed.\n");
+        return;
+    }
+    else{
+        task_add_file(fd, input_callback);
+    }
+    
 
     // 尝试初始化蓝牙
     if (bluetooth_init("/dev/rfcomm0") > 0) {
