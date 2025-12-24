@@ -55,7 +55,7 @@ typedef struct {
 
 typedef struct {
     float input[INPUT_DELAY];
-}InputBuffer;
+}InputBuffer; //save historical input
 
 // ���Žṹ��
 typedef struct {
