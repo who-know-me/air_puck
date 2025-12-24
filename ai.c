@@ -6,14 +6,14 @@
 static AIController ai_controller;
 static int ai_enabled = 1;
 
-// »ñÈ¡µ±Ç°Ê±¼ä£¨Ãë£©
+// ï¿½ï¿½È¡ï¿½ï¿½Ç°Ê±ï¿½ä£¨ï¿½ë£©
 static float get_current_time(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec + ts.tv_nsec / 1e9;
 }
 
-// AI³õÊ¼»¯
+// AIï¿½ï¿½Ê¼ï¿½ï¿½
 void ai_init(void) {
     ai_controller.state = AI_DEFENSE;
     ai_controller.last_think_time = get_current_time();
@@ -23,29 +23,29 @@ void ai_init(void) {
     ai_enabled = 1;
 }
 
-// ÉèÖÃAIÊÇ·ñÆôÓÃ
+// ï¿½ï¿½ï¿½ï¿½AIï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½
 void ai_set_enabled(int enabled) {
     ai_enabled = enabled;
 }
 
-// AI¸üÐÂ
-void ai_update(float delta_time) {
+// AIï¿½ï¿½ï¿½ï¿½
+void ai_update(float delta_time) {       //TODO: delta time here is not used. actually ai should update using frame_id. 
     if (!ai_enabled) return;
 
     float current_time = get_current_time();
 
-    // Ã¿0.5ÃëÖØÐÂË¼¿¼Ò»´Î
+    // Ã¿0.5ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¼ï¿½ï¿½Ò»ï¿½ï¿½
     if (current_time - ai_controller.last_think_time > AI_THINK_INTERVAL) {
         ai_controller.last_think_time = current_time;
 
-        // ¼ÆËã±ùÇòµ½ÇòÃÅµÄ¾àÀë
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÅµÄ¾ï¿½ï¿½ï¿½
         float puck_to_player = sqrtf(powf(puck.x - player2.x, 2) + powf(puck.y - player2.y, 2));
         float puck_speed = sqrtf(puck.vx * puck.vx + puck.vy * puck.vy);
 
-        // ÅÐ¶ÏÇòÊÇ·ñÔÚAIºó·½
+        // ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½AIï¿½ï¿½
         int is_ball_behind = (puck.x < player2.x);
 
-        // ÅÐ¶ÏÊÇ·ñ¿¨×¡
+        // ï¿½Ð¶ï¿½ï¿½Ç·ï¿½×¡
         if (puck_to_player < 50 && puck_speed < 2.0f) {
             ai_controller.stuck_counter++;
         }
@@ -53,30 +53,30 @@ void ai_update(float delta_time) {
             ai_controller.stuck_counter = 0;
         }
 
-        // ¸ù¾ÝÇé¿öÑ¡ÔñAI×´Ì¬
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½AI×´Ì¬
         if (ai_controller.stuck_counter > 3) {
-            // ±»¿¨×¡ÁË£¬ÇÐ»»µ½½âÎ§Ä£Ê½
+            // ï¿½ï¿½ï¿½ï¿½×¡ï¿½Ë£ï¿½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½Î§Ä£Ê½
             ai_controller.state = AI_CLEAR;
             ai_controller.strategy_x = puck.x;
             ai_controller.strategy_y = puck.y;
         }
         else if (is_ball_behind) {
-            // ÇòÔÚAIºó·½£¬ÐèÒª×ªÉíÈ¥×·Çò
+            // ï¿½ï¿½ï¿½ï¿½AIï¿½ó·½£ï¿½ï¿½ï¿½Òª×ªï¿½ï¿½È¥×·ï¿½ï¿½
             ai_controller.state = AI_RETREAT;
-            ai_controller.strategy_x = puck.x - 30; // ÔÚÇòºó·½Ò»µã
+            ai_controller.strategy_x = puck.x - 30; // ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
             ai_controller.strategy_y = puck.y;
 
-            // È·±£²»»áÅÜ³ö¼º·½°ë³¡
+            // È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë³¡
             if (ai_controller.strategy_x < screen_center_x + player2.radius) {
                 ai_controller.strategy_x = screen_center_x + player2.radius;
             }
         }
         else if (puck.x < screen_center_x) {
-            // ±ùÇòÔÚ¶Ô·½°ë³¡£¬·ÀÊØÄ£Ê½
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶Ô·ï¿½ï¿½ë³¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½
             ai_controller.state = AI_DEFENSE;
             ai_controller.strategy_x = goal2.x - 100;
 
-            // Ô¤²âÇòµÄÐÐ½øÂ·Ïß
+            // Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð½ï¿½Â·ï¿½ï¿½
             if (puck.vx > 0) {
                 float predict_y = puck.y + puck.vy * (goal2.x - puck.x) / puck.vx;
                 ai_controller.strategy_y = predict_y;
@@ -86,27 +86,27 @@ void ai_update(float delta_time) {
             }
         }
         else if (puck.vx > 5.0f && puck.x > screen_center_x + 150) {
-            // ±ùÇò¿ìËÙ³åÏò¼º·½ÇòÃÅ£¬½ô¼±³·ÍË
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù³ï¿½ï¿½ò¼º·ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             ai_controller.state = AI_RETREAT;
             ai_controller.strategy_x = goal2.x - 50;
             ai_controller.strategy_y = puck.y;
         }
         else {
-            // ½ø¹¥Ä£Ê½
+            // ï¿½ï¿½ï¿½ï¿½Ä£Ê½
             ai_controller.state = AI_ATTACK;
 
-            // ¼ÆËãÇòµ½AIµÄ¾àÀë
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½AIï¿½Ä¾ï¿½ï¿½ï¿½
             float dx_to_puck = puck.x - player2.x;
             float dy_to_puck = puck.y - player2.y;
             float distance_to_puck = sqrtf(dx_to_puck * dx_to_puck + dy_to_puck * dy_to_puck);
 
             if (distance_to_puck > 80) {
-                // ÀëÇò½ÏÔ¶£¬Ö±½ÓÈ¥ÇòµÄÎ»ÖÃ
+                // ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½Ö±ï¿½ï¿½È¥ï¿½ï¿½ï¿½Î»ï¿½ï¿½
                 ai_controller.strategy_x = puck.x;
                 ai_controller.strategy_y = puck.y;
             }
             else {
-                // ÀëÇò½Ï½ü£¬¼ÆËã»÷Çò·½Ïò
+                // ï¿½ï¿½ï¿½ï¿½Ï½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 float target_goal_x = goal1.x;
                 float target_goal_y = screen_center_y;
                 float dx_to_goal = target_goal_x - puck.x;
@@ -124,7 +124,7 @@ void ai_update(float delta_time) {
             }
         }
 
-        // ÏÞÖÆ²ßÂÔÎ»ÖÃÔÚÇò³¡ÄÚ
+        // ï¿½ï¿½ï¿½Æ²ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (ai_controller.strategy_x < screen_center_x + player2.radius) {
             ai_controller.strategy_x = screen_center_x + player2.radius;
         }
@@ -139,7 +139,7 @@ void ai_update(float delta_time) {
         }
     }
 
-    // Æ½»¬ÒÆ¶¯µ½Ä¿±êÎ»ÖÃ
+    // Æ½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
     float dx = ai_controller.strategy_x - player2.x;
     float dy = ai_controller.strategy_y - player2.y;
     float distance = sqrtf(dx * dx + dy * dy);
@@ -148,7 +148,7 @@ void ai_update(float delta_time) {
         dx /= distance;
         dy /= distance;
 
-        // ¸ù¾Ý×´Ì¬µ÷ÕûËÙ¶È
+        // ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
         float speed = 10.0f;
         if (ai_controller.state == AI_RETREAT || ai_controller.state == AI_CLEAR) {
             speed = 15.0f;

@@ -8,20 +8,22 @@
 #include "gameinput.h"
 #include "bluetooth.h"
 
-// È«¾Ö±äÁ¿
+
+// å…¨å±€å˜é‡
 static int is_bluetooth_mode = 0;
 
 
 
-// À¶ÑÀÊı¾İ»Øµ÷
+
+// è“ç‰™æ•°æ®å›è°ƒ
 static void on_bluetooth_data(const char* data) {
     printf("Bluetooth received: %s\n", data);
 
     if (strstr(data, "POS:") == data) {
-        // ½âÎöÎ»ÖÃĞÅÏ¢
+        // è§£æä½ç½®ä¿¡æ¯
         float rx, ry;
         if (sscanf(data + 4, "%f,%f", &rx, &ry) == 2) {
-            // Ó³Éäµ½¶Ô·½°ë³¡
+            // æ˜ å°„åˆ°å¯¹æ–¹åŠåœº
             float mapped_x = SCREEN_WIDTH - rx;
             player2.target_x = mapped_x;
             player2.target_y = ry;
@@ -30,7 +32,7 @@ static void on_bluetooth_data(const char* data) {
     else if (strstr(data, "CONNECTED") != NULL) {
         printf("Bluetooth connected\n");
         bluetooth_set_connected(1);
-        ai_set_enabled(0); // À¶ÑÀÄ£Ê½ÏÂ½ûÓÃAI
+        ai_set_enabled(0); // è“ç‰™æ¨¡å¼ä¸‹ç¦ç”¨AI
         is_bluetooth_mode = 1;
     }
     else if (strstr(data, "GOAL:P1") == data) {
@@ -50,7 +52,7 @@ static void on_bluetooth_data(const char* data) {
     }
 }
 
-// ÓÎÏ·¶¨Ê±Æ÷»Øµ÷
+// æ¸¸æˆå®šæ—¶å™¨å›è°ƒ
 static void game_timer_cb(int period) {
     //printf("game timer triggerred\n");
     if (game_state == GAME_PLAYING) {
@@ -60,19 +62,25 @@ static void game_timer_cb(int period) {
         //printf("[game timer]update and draw completed\n");
         //printf("[game timer]switch to input process\n");
 
-        // ´¦ÀíÊäÈë
+        // å¤„ç†è¾“å…¥
         input_process();
 
-        // ´¦ÀíÀ¶ÑÀ
-        if (is_bluetooth_mode) {
+        // å¤„ç†è“ç‰™
+        /*
+        if (is_bluetooth_mode) {      //TODO: this may be unnecessary
             bluetooth_process();
         }
+        */
+    }
+    else if (game_state == GAME_WAITING){
+        game_wait();
+        input_process();
     }
 }
 
-// Á¬½Ó¼ì²é¶¨Ê±Æ÷
+// è¿æ¥æ£€æŸ¥å®šæ—¶å™¨
 static void connection_timer_cb(int period) {
-    // Í¬²½±È·Ö£¨Èç¹ûÀ¶ÑÀÁ¬½Ó£©
+    // åŒæ­¥æ¯”åˆ†ï¼ˆå¦‚æœè“ç‰™è¿æ¥ï¼‰
     if (is_bluetooth_mode) {
         char buffer[32];
         snprintf(buffer, sizeof(buffer), "SCORE:%d,%d\n", player1.score, player2.score);
@@ -80,17 +88,18 @@ static void connection_timer_cb(int period) {
     }
 }
 
+/*
 int main(int argc, char* argv[]) {
-    // ³õÊ¼»¯Ëæ»úÖÖ×Ó
+    // åˆå§‹åŒ–éšæœºç§å­
     srand(time(NULL));
 
-    // ³õÊ¼»¯Í¼ĞÎ
+    // åˆå§‹åŒ–å›¾å½¢
     draw_init();
 
-    // ³õÊ¼»¯ÓÎÏ·
+    // åˆå§‹åŒ–æ¸¸æˆ
     game_init();
 
-    // ³õÊ¼»¯ÊäÈë
+    // åˆå§‹åŒ–è¾“å…¥
     if (input_init("/dev/input/event2") < 0) {
         printf("input init failed\n");
         return;
@@ -105,25 +114,89 @@ int main(int argc, char* argv[]) {
     }
     
 
-    // ³¢ÊÔ³õÊ¼»¯À¶ÑÀ
+    // å°è¯•åˆå§‹åŒ–è“ç‰™
     if (bluetooth_init("/dev/rfcomm0") > 0) {
         bluetooth_set_callback(on_bluetooth_data);
         is_bluetooth_mode = 1;
-        ai_set_enabled(0); // À¶ÑÀÄ£Ê½ÏÂ½ûÓÃAI
+        ai_set_enabled(0); // è“ç‰™æ¨¡å¼ä¸‹ç¦ç”¨AI
         printf("Running in Bluetooth mode\n");
+
     }
     else {
         printf("Running in local mode (AI opponent)\n");
     }
 
-    // »æÖÆ³õÊ¼»­Ãæ
+    // ç»˜åˆ¶åˆå§‹ç”»é¢
     draw_game();
 
-    // Ìí¼Ó¶¨Ê±Æ÷
+    // æ·»åŠ å®šæ—¶å™¨
     task_add_timer(16, game_timer_cb);      // ~60 FPS
-    task_add_timer(1000, connection_timer_cb);  // Ã¿Ãë¼ì²éÁ¬½Ó
+    //task_add_timer(1000, connection_timer_cb);  // æ¯ç§’æ£€æŸ¥è¿æ¥
 
-    // ½øÈëÖ÷Ñ­»·
+    // è¿›å…¥ä¸»å¾ªç¯
+    task_loop();
+
+    return 0;
+}
+*/
+int main(int argc, char* argv[])
+{
+    srand(time(NULL));
+
+    /* ---------- Graphics ---------- */
+    draw_init();
+
+    /* ---------- Game ---------- */
+    game_init();
+
+    /* ---------- Input ---------- */
+    int fd = input_init("/dev/input/event2");
+    if (fd < 0) {
+        printf("input init failed\n");
+        return -1;
+    }
+    task_add_file(fd, input_callback);
+
+    /* ---------- Bluetooth ---------- */
+    is_bluetooth_mode = 0;
+    printf("choose mode, 0 = bt_host, 1 = bt_client, 2 = local\n");
+    int mode = -1, handshake = -1;
+    while(mode != 0 && mode!= 1 && mode != 2){
+        scanf("%d", &mode);
+    }
+    if(mode == 2){
+        printf("running in local mode\n");
+        game_state = GAME_PLAYING; // start instantly
+    }else{
+        if(bluetooth_init(mode) < 0){
+            printf("bluetooth init failed\n");
+            return -1;
+        }
+        bluetooth_set_callback(on_bluetooth_data);
+        ai_set_enabled(0);
+        is_bluetooth_mode = 1;
+        printf("Bluetooth connected, starting handshake...\n");
+        if(mode == 1){  //handshake as client
+            handshake = bluetooth_handshake_client(&start_frame);
+        }else{  // handshake as host
+            handshake = bluetooth_handshake_host(START_FRAME);
+        }
+        if(handshake < 0){
+            printf("handshake failed\n");
+            return -1;
+        }else{
+            printf("handshake complete.\n");
+        }
+        game_state = GAME_WAITING; // wait until start frame
+    }
+
+    /* ---------- Initial Render ---------- */
+    draw_game();
+
+    /* ---------- Timers ---------- */
+    task_add_timer(16, game_timer_cb);   // ~60 FPS
+
+    /* ---------- Main Loop ---------- */
     task_loop();
 
     return 0;

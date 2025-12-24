@@ -17,6 +17,7 @@
 
 #define FRAME_RATE 60       // 60 frames per second
 #define INPUT_DELAY 3       //delay input for 3 frames
+#define START_FRAME 20
 
 // ��ɫ����
 #define COLOR_BACKGROUND    FB_COLOR(0x33, 0x66, 0x99)  // ��ɫ����
@@ -28,14 +29,12 @@
 #define COLOR_CENTER_LINE   FB_COLOR(0xFF, 0xFF, 0xFF)  // ��ɫ - ����
 #define COLOR_TEXT          FB_COLOR(0xFF, 0xFF, 0xFF)  // ��ɫ����
 
-// ��Ϸ״̬
 typedef enum {
     GAME_WAITING,
     GAME_PLAYING,
     GAME_PAUSED
 } GameState;
 
-// ��ҽṹ��
 typedef struct {
     float x, y;           // ��ǰλ��
     float target_x, target_y; // Ŀ��λ��
@@ -45,7 +44,6 @@ typedef struct {
     int color;
 } Player;
 
-// ����ṹ��
 typedef struct {
     float x, y;
     float vx, vy;
@@ -53,9 +51,11 @@ typedef struct {
     int color;
 } Puck;
 
+
 typedef struct {
-    float input[INPUT_DELAY];
-}InputBuffer; //save historical input
+    float xin;
+    float yin;
+}Input, *InputPtr; 
 
 // ���Žṹ��
 typedef struct {
@@ -65,7 +65,6 @@ typedef struct {
     int color;
 } Goal;
 
-// ��Ϸȫ�ֱ�������
 extern GameState game_state;
 extern Player player1, player2;
 extern Puck puck;
@@ -74,32 +73,32 @@ extern int screen_center_x, screen_center_y;
 extern int field_width, field_height;
 extern int field_x, field_y;
 
-extern int frame_id;
-extern 
+extern int frame_id, start_frame;
+extern Input local_input_buffer[INPUT_DELAY], remote_input_buffer[INPUT_DELAY]; 
 
 
-// ��Ϸ��ʼ��
 void game_init(void);
 
-// ��Ϸ�߼�����
 void game_update(void);
 
-// �����߽���ײ
+void game_wait(void);
+
 void handle_boundaries(void); 
 
-// ������
 void check_goals(void);
 	
-// ��Ϸ����
 void game_draw(void);
 
-// ��ײ���
 int check_collision(float x1, float y1, float r1, float x2, float y2, float r2);
 
-// ��ײ����
 void handle_collision(Player *player, Puck *puck);
 
-// ������Ϸ״̬�������
 void reset_after_goal(void);
+
+void save_local_input(int frame_id, Input localin);
+void save_remote_input(int frame_id, Input remotein);
+
+Input load_local_input(int frame_id);
+Input load_remote_input(int frame_id);
 
 #endif /* _GAME_H_ */

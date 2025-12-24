@@ -2,6 +2,7 @@
 #include "ai.h"
 #include "draw.h"
 #include <math.h>
+#include "bluetooth.h"
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,10 @@ Goal goal1, goal2;
 int screen_center_x, screen_center_y;
 int field_width, field_height;
 int field_x, field_y;
+
+int frame_id = 0; 
+Input local_input_buffer[INPUT_DELAY], remote_input_buffer[INPUT_DELAY]; 
+
 
 // 获取当前时间（秒）
 static float get_current_time(void) {
@@ -34,11 +39,18 @@ void game_init(void) {
     field_x = FIELD_PADDING;
     field_y = FIELD_PADDING;
 
+    // initialize frameid
+    frame_id = 0;
+
     // 初始化玩家1 (左侧)
     player1.x = field_x + field_width * 0.25f;
     player1.y = screen_center_y;
-    player1.target_x = player1.x;
-    player1.target_y = player1.y;
+    Input p1_init; p1_init.xin = player1.x; p1_init.yin = player1.y;
+    for(int i = 0; i<INPUT_DELAY; i++){
+        save_local_input(i, p1_init);
+    }
+    player1.target_x = load_local_input(frame_id).xin;
+    player1.target_y = load_local_input(frame_id).yin;
     player1.vx = player1.vy = 0;
     player1.score = 0;
     player1.radius = PLAYER_RADIUS;
@@ -47,8 +59,12 @@ void game_init(void) {
     // 初始化玩家2 (右侧)
     player2.x = field_x + field_width * 0.75f;
     player2.y = screen_center_y;
-    player2.target_x = player2.x;
-    player2.target_y = player2.y;
+    Input p2_init; p2_init.xin = player2.x; p2_init.yin = player2.y;
+    for(int i = 0; i<INPUT_DELAY; i++){
+        save_remote_input(i, p2_init);
+    }
+    player2.target_x = load_remote_input(frame_id).xin;
+    player2.target_y = load_remote_input(frame_id).yin;
     player2.vx = player2.vy = 0;
     player2.score = 0;
     player2.radius = PLAYER_RADIUS;
@@ -158,12 +174,22 @@ void reset_after_goal(void) {
 
 // 更新游戏逻辑
 void game_update(void) {
-    float current_time = get_current_time();
-    float delta_time = current_time - last_time;
-    last_time = current_time;
 
+    frame_id  = (frame_id + 1) % FRAME_RATE;  // enter next frame
+
+    float current_time = get_current_time();
+    float delta_time = current_time - last_time;         //TODO: substitute this with a fix framerate
+    last_time = current_time;
     // 限制delta_time，避免异常值
     if (delta_time > 0.1f) delta_time = 0.1f;
+
+    // get historical input
+    player1.target_x = load_local_input(frame_id).xin;
+    player1.target_y = load_local_input(frame_id).yin;
+    player2.target_x = load_remote_input(frame_id).xin;
+    player2.target_y = load_remote_input(frame_id).yin;
+
+
 
     // 更新玩家1位置
     float dx = player1.target_x - player1.x;
@@ -262,8 +288,17 @@ void game_update(void) {
 
     // 检查进球 - 现在函数已经声明了
     check_goals();
+
 }
 
+/* waiting for the start frame ,only do input exchange and frame_id update*/
+void game_wait(void){
+    frame_id = (frame_id + 1) % FRAME_RATE;
+    
+    if(frame_id == START_FRAME - 1){  //start on next frame
+        game_state = GAME_PLAYING;
+    }
+}
 // 处理边界碰撞
 void handle_boundaries(void) {
     // 边界反弹（排除球门区域）
@@ -328,4 +363,29 @@ void check_goals(void) {
             reset_after_goal();
         }
     }
+}
+
+
+void save_local_input(int frame_id, Input localin)
+{
+    printf("saving  local input. frame id %5d x %5f y %5f", frame_id, localin.xin, localin.yin);
+    local_input_buffer[frame_id%INPUT_DELAY] = localin;
+}
+
+void save_remote_input(int frame_id, Input remotein)
+{
+    printf("saving remote input. frame id %5d x %5f y %5f", frame_id, remotein.xin, remotein.yin);
+    remote_input_buffer[frame_id%INPUT_DELAY] = remotein;
+}
+
+Input load_local_input(int frame_id)
+{
+    printf("loading  local input. frame id %5d x %5f y %5f", frame_id, local_input_buffer[frame_id%INPUT_DELAY].xin, local_input_buffer[frame_id%INPUT_DELAY].yin);
+    return local_input_buffer[frame_id%INPUT_DELAY];
+}
+
+Input load_remote_input(int frame_id)
+{
+    printf("loading remote input. frame id %5d x %5f y %5f", frame_id, remote_input_buffer[frame_id%INPUT_DELAY].xin, remote_input_buffer[frame_id%INPUT_DELAY].yin);
+    return remote_input_buffer[frame_id%INPUT_DELAY];
 }

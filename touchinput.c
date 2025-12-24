@@ -8,6 +8,8 @@
 #include <input.h>
 #include "gameinput.h"
 #include <unistd.h>
+#include "game.h"
+#include "bluetooth.h"
 
 
 static struct finger_info{
@@ -16,6 +18,8 @@ static struct finger_info{
 	int event;
 } infos[FINGER_NUM_MAX];
 static int cur_slot = 0;
+
+static Input 
 
 int touch_init(char *dev)
 {
@@ -124,60 +128,58 @@ int input_init(const char* touch_device) {
 
 // 触摸事件回调
 void on_touch(int x, int y, int type, int finger) {
+	static Input touchinput;
     switch (type) {
     case TOUCH_PRESS:
     case TOUCH_MOVE:
         if (finger == 0 && x < screen_center_x) {
             // 直接设置目标位置，不要添加延迟或平滑
-            player1.target_x = x;
-            player1.target_y = y;
+			touchinput.xin = x; touchinput.yin = y;
+			save_local_input(frame_id, touchinput);  //save input
 
-            /* TODO: bluetooth logic omitted
             // 如果蓝牙已连接，发送位置信息
             if (is_bluetooth_mode) {
-                char buffer[32];
-                snprintf(buffer, sizeof(buffer), "POS:%.1f,%.1f\n", (float)x, (float)y);
-                bluetooth_send(buffer);
+				bluetooth_send_input(frame_id, touchinput);
             }
-            */
         }
         break;
 
     case TOUCH_RELEASE:
         if (finger == 0) {
-            player1.target_x = player1.x;
-            player1.target_y = player1.y;
+			touchinput.xin = player1.x; touchinput.yin = player1.y;  // auto stop when finger is released
+			save_local_input(frame_id, touchinput);              
         }
         break;
 
     case TOUCH_ERROR:  // shouldn't happen in non-blocking read
         printf("Touch device error\n");
         break;
-	case TOUCH_NO_EVENT: // do nothing
+	case TOUCH_NO_EVENT: // copy last input
+		touchinput.xin = load_local_input((frame_id -1 + FRAME_RATE) % FRAME_RATE).xin;
+		touchinput.yin = load_local_input((frame_id -1 + FRAME_RATE) % FRAME_RATE).yin;
+		save_local_input(frame_id, touchinput);
+		if(is_bluetooth_mode){
+			bluetooth_send_input(frame_id, touchinput);
+		}
 		break;
     }
 }
 
-void input_process(void) {
-    //printf("[input process]reading touch\n");
+/*this is called at the start of a frame to guaranee an available input for the frame*/
+void input_process(void) {  
     if (touch_fd < 0){
-		//printf("[input process] call touch_init first!!\n");
 		return;
 	} 
 
     int type, x, y, finger;
     type = touch_read(touch_fd, &x, &y, &finger);
-
-    //printf("[input process]read touch finished\n");
-    if (type != TOUCH_NO_EVENT) {
-        on_touch(x, y, type, finger);
-    }
+          								
+    on_touch(x, y, type, finger);	// need at least one input for this frame .so call on_touch whatever type is
 }
 
+/*this is called whenever touch_fd is available to read new input for current frame*/
 void input_callback(int fd) {
-    //printf("[input process]reading touch\n");
     if (fd != touch_fd ){
-		//printf("[input process] call touch_init first!!\n");
 		printf("fd != touch_fd\n");
 		return;
 	} 
@@ -186,7 +188,7 @@ void input_callback(int fd) {
     type = touch_read(touch_fd, &x, &y, &finger);
 
     //printf("[input process]read touch finished\n");
-    if (type != TOUCH_NO_EVENT) {
+    if (type != TOUCH_NO_EVENT) {  // no need to update input buffer when there's no event
         on_touch(x, y, type, finger);
     }
 }
