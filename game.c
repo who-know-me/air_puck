@@ -181,7 +181,6 @@ void game_update(void) {
         player1.vx *= 0.9f;
         player1.vy *= 0.9f;
     }
-	printf("play1.vx: %.2f, vy: %.2f\n", player1.vx, player1.vy);)
     player1.x += player1.vx;
     player1.y += player1.vy;
 

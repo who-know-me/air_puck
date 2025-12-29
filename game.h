@@ -6,21 +6,21 @@
 // 游戏常量
 #define PLAYER_RADIUS       30
 #define PUCK_RADIUS         20
-#define GOAL_WIDTH          150
-#define GOAL_HEIGHT         30
-#define GOAL_DEPTH          10
+#define GOAL_WIDTH          250
+//#define GOAL_HEIGHT         50
+#define GOAL_DEPTH          30
 #define FIELD_PADDING       50
 #define FRICTION            0.98f
 #define MAX_SPEED           25.0f
 #define COLLISION_DAMPING   0.8f
 #define AI_THINK_INTERVAL   0.5f  // AI思考间隔（秒）
 
-// 颜色定义
-#define COLOR_BACKGROUND    FB_COLOR(0x33, 0x66, 0x99)  // 蓝色背景
+// 颜色定义#1E90FF
+#define COLOR_BACKGROUND    FB_COLOR(0x1E, 0x90, 0xFF)  // 深蓝色背景
 #define COLOR_PLAYER1       FB_COLOR(0xFF, 0x00, 0x00)  // 红色 - 玩家1
 #define COLOR_PLAYER2       FB_COLOR(0x00, 0xFF, 0x00)  // 绿色 - 玩家2
 #define COLOR_PUCK          FB_COLOR(0xFF, 0xFF, 0xFF)  // 白色 - 冰球
-#define COLOR_FIELD         FB_COLOR(0x66, 0xCC, 0xFF)  // 浅蓝 - 球场
+#define COLOR_FIELD         FB_COLOR(0xFF, 0xFF, 0xFF)  // 白色 - 球场
 #define COLOR_GOAL          FB_COLOR(0x99, 0x99, 0x99)  // 灰色 - 球门
 #define COLOR_CENTER_LINE   FB_COLOR(0xFF, 0xFF, 0xFF)  // 白色 - 中线
 #define COLOR_TEXT          FB_COLOR(0xFF, 0xFF, 0xFF)  // 白色文字

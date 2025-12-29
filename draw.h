@@ -2,6 +2,7 @@
 #define _DRAW_H_
 
 #include "game.h"
+#include "fjy_draw.h"
 
 // Õº–Œ≥ı ºªØ
 void draw_init(void);

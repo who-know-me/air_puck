@@ -15,6 +15,7 @@ static int is_bluetooth_mode = 0;
 static void on_touch(int x, int y, int type, int finger) {
     switch (type) {
     case TOUCH_PRESS:
+        printf("TOUCH_PRESS");
     case TOUCH_MOVE:
         if (finger == 0 && x < screen_center_x) {
             // 直接设置目标位置，不要添加延迟或平滑
@@ -119,6 +120,9 @@ int main(int argc, char* argv[]) {
     // 初始化输入
     if (input_init("/dev/input/event2") > 0) {
         input_set_touch_callback(on_touch);
+    }
+    else {
+        printf("input_init error\n");
     }
 
     // 尝试初始化蓝牙

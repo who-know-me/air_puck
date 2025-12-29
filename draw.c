@@ -14,14 +14,20 @@ void draw_game(void) {
     fb_draw_rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, COLOR_BACKGROUND);
 
     // 绘制球场边框
+    fb_draw_border(field_x - 1, field_y - 1, field_width + 2, field_height + 2, COLOR_FIELD);
     fb_draw_border(field_x, field_y, field_width, field_height, COLOR_FIELD);
+    fb_draw_border(field_x + 1, field_y + 1, field_width - 2, field_height - 2, COLOR_FIELD);
+
 
     // 绘制中线
+    fb_draw_line(screen_center_x - 1, field_y, screen_center_x - 1, field_y + field_height, COLOR_CENTER_LINE);
     fb_draw_line(screen_center_x, field_y, screen_center_x, field_y + field_height, COLOR_CENTER_LINE);
+    fb_draw_line(screen_center_x + 1, field_y, screen_center_x + 1, field_y + field_height, COLOR_CENTER_LINE);
+
 
     // 绘制中圈
-    fb_draw_circle(screen_center_x, screen_center_y, 60, COLOR_CENTER_LINE);
-    fb_draw_circle(screen_center_x, screen_center_y, 59, COLOR_FIELD);
+    fb_draw_circle(screen_center_x, screen_center_y, 70, COLOR_CENTER_LINE);
+    fb_draw_circle(screen_center_x, screen_center_y, 67, COLOR_BACKGROUND);
 
     // 绘制球门
     fb_draw_border(goal1.x, goal1.y, goal1.width, goal1.height, goal1.color);
@@ -38,9 +44,24 @@ void draw_game(void) {
             FB_COLOR(0x66, 0x66, 0x66));
     }
 
+    //绘制球门圈
+    fb_draw_half_circle(field_x, screen_center_y, 90, COLOR_CENTER_LINE, 3);
+    fb_draw_half_circle(field_x, screen_center_y, 87, COLOR_BACKGROUND, 3);
+    fb_draw_half_circle(field_x + field_width, screen_center_y, 90, COLOR_CENTER_LINE, 2);
+    fb_draw_half_circle(field_x + field_width, screen_center_y, 87, COLOR_BACKGROUND, 2);
+
+
+
     // 绘制玩家
-    fb_draw_circle((int)player1.x, (int)player1.y, player1.radius, player1.color);
-    fb_draw_circle((int)player2.x, (int)player2.y, player2.radius, player2.color);
+    fb_image* img;
+    img = fb_read_png_image("./handle_r.png");
+    fb_draw_image((int)player1.x - player1.radius, (int)player1.y - player1.radius, img, 0);
+    fb_free_image(img);
+    img = fb_read_png_image("./handle_b.png");
+    fb_draw_image((int)player2.x - player2.radius, (int)player2.y - player2.radius, img, 0);
+    fb_free_image(img);
+    //fb_draw_circle((int)player1.x, (int)player1.y, player1.radius, player1.color);
+    //fb_draw_circle((int)player2.x, (int)player2.y, player2.radius, player2.color);
 
     // 绘制冰球
     fb_draw_circle((int)puck.x, (int)puck.y, puck.radius, puck.color);
