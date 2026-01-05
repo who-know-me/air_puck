@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+
+#define RFCOMM_TIMEOUT_MS 30000
 
 
 
@@ -21,51 +25,73 @@ static int bt_role = -1;
  * Init / status
  * ============================================================ */
 
+
+static int wait_for_rfcomm(const char *dev, int timeout_ms)
+{
+    struct stat st;
+    int elapsed = 0;
+
+    while (elapsed < timeout_ms) {
+        if (stat(dev, &st) == 0)
+            return 0;   // device exists
+
+        usleep(100 * 1000); // 100 ms
+        elapsed += 100;
+    }
+    return -1;
+}
+
 int bluetooth_init(int role)
 {
-    char device[64] = {0};
-    char dst_mac[32] = {0};
+    char cmd[128];
+    char dst_mac[32] = "D0:A4:6F:CF:B6:40";  //TODO: for test, dstmac is predefined
+    const char *dev = "/dev/rfcomm0";
 
     bt_role = role;
 
+    /* Clean up any previous rfcomm binding */
+    system("rfcomm release rfcomm0 >/dev/null 2>&1");
+
     if (bt_role == 1) {
         /* CLIENT MODE */
-        printf("Enter destination MAC (e.g. 00:11:22:33:44:55): ");
-        fflush(stdout);
+        printf("Enter destination MAC (e.g. 00:11:22:33:44:55): \n");
 
+
+        /*
         if (scanf("%31s", dst_mac) != 1) {
             fprintf(stderr, "Failed to read MAC address\n");
             return -1;
         }
+        */
 
-        /* Bind rfcomm device to remote MAC */
-        snprintf(device, sizeof(device),
-                 "rfcomm connect rfcomm0 %s 1", dst_mac);
+        printf("dest MAC %s\n", dst_mac);
 
-        if (system(device) != 0) {
-            fprintf(stderr, "rfcomm connect failed\n");
-            return -1;
-        }
+        snprintf(cmd, sizeof(cmd),
+                 "rfcomm -r connect rfcomm0 %s 2 &", dst_mac);
 
-        strcpy(device, "/dev/rfcomm0");
-    } else if(bt_role = 0){
+    } else if (bt_role == 0) {
         /* HOST MODE */
-        snprintf(device, sizeof(device),
-                 "rfcomm listen rfcomm0 1 &");
+        snprintf(cmd, sizeof(cmd),
+                 "rfcomm listen rfcomm0 2 &");
 
-        if (system(device) != 0) {
-            fprintf(stderr, "rfcomm listen failed\n");
-            return -1;
-        }
+    } else {
+        fprintf(stderr, "invalid bt_role\n");
+        return -1;
+    }
 
-        strcpy(device, "/dev/rfcomm0");
-    } else{
-        printf("invalid bt_role\n");
+    if (system(cmd) != 0) {
+        fprintf(stderr, "rfcomm command failed\n");
+        return -1;
+    }
+
+    /* Wait until /dev/rfcomm0 appears */
+    if (wait_for_rfcomm(dev, RFCOMM_TIMEOUT_MS) < 0) {
+        fprintf(stderr, "rfcomm device not ready\n");
         return -1;
     }
 
     /* Open RFCOMM device */
-    bt_fd = open(device, O_RDWR | O_NOCTTY);
+    bt_fd = open(dev, O_RDWR | O_NOCTTY);
     if (bt_fd < 0) {
         perror("bluetooth open");
         return -1;
@@ -74,6 +100,7 @@ int bluetooth_init(int role)
     bt_connected = 1;
     return bt_fd;
 }
+
 
 /*
 int bluetooth_init(const char* device)
@@ -155,7 +182,7 @@ int bluetooth_handshake_client(uint32_t* out_start_frame)
 
     srand(hello.seed);
     *out_start_frame = hello.start_frame;
-
+    
     printf("[BT] handshake OK (client)\n");
     return 0;
 }
@@ -171,8 +198,10 @@ void bluetooth_send_input(int frame_id, Input in)
     BtInput pkt;
     pkt.type     = BT_MSG_INPUT;
     pkt.frame_id = frame_id;
-    pkt.xin      = in.xin;
+    pkt.xin      = SCREEN_WIDTH - in.xin;       // project to p2 halfcourt
     pkt.yin      = in.yin;
+
+    //printf("sending input: frame id %d, xy %f %f\n", frame_id, in.xin, in.yin);
 
     write(bt_fd, &pkt, sizeof(pkt));
 }
@@ -181,8 +210,12 @@ void bluetooth_send_input(int frame_id, Input in)
  * Non-blocking receive (called from task manager)
  * ============================================================ */
 
-void bluetooth_process(void)
+void bluetooth_process(int fd)
 {
+    if(fd != bt_fd){
+        printf("[bt process]fd mismatch\n");
+        return;
+    }
     if (!bt_connected) return;
 
     BtInput pkt;
@@ -209,6 +242,7 @@ void bluetooth_process(void)
             Input in;
             in.xin = pkt.xin;
             in.yin = pkt.yin;
+            printf("saving  input: frame id %d xy %f %f\n", pkt.frame_id, in.xin, in.yin);
             save_remote_input(pkt.frame_id, in);
         }
     }

@@ -48,6 +48,6 @@ int bluetooth_handshake_client(uint32_t* out_start_frame);
 
 /* in-game input exchange */
 void bluetooth_send_input(int frame_id, Input in);
-void bluetooth_process(void);   // call from file task callback
+void bluetooth_process(int fd);   // call from file task callback
 
 #endif /* _BLUETOOTH_H_ */

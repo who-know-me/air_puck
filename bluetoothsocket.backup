@@ -1,0 +1,256 @@
+#include "bluetooth.h"
+#include "../common/common.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include <sys/socket.h>
+
+/* ============================================================
+ * Configuration
+ * ============================================================ */
+#define RFCOMM_CHANNEL 1
+
+/* ============================================================
+ * Packet definition
+ * ============================================================ */
+typedef enum {
+    BT_MSG_HELLO = 1,
+    BT_MSG_ACK   = 2,
+    BT_MSG_INPUT = 3,
+} BtMsgType;
+
+/* Fixed-size binary packet (do NOT change layout) */
+typedef struct __attribute__((packed)) {
+    uint8_t  type;
+
+    /* ---- handshake fields ---- */
+    uint32_t start_frame;   // authoritative host frame
+    uint32_t seed;          // srand seed
+
+    /* ---- gameplay fields ---- */
+    uint32_t frame_id;
+    float    xin;
+    float    yin;
+} BtPacket;
+
+/* ============================================================
+ * Globals
+ * ============================================================ */
+static int bt_fd     = -1;
+static int listen_fd = -1;
+static int bt_role   = -1;
+
+/* ============================================================
+ * Helpers: reliable send / recv
+ * ============================================================ */
+static int send_full(int fd, const void *buf, size_t len)
+{
+    size_t off = 0;
+    while (off < len) {
+        ssize_t n = send(fd, (const char *)buf + off, len - off, 0);
+        if (n <= 0)
+            return -1;
+        off += n;
+    }
+    return 0;
+}
+
+static int recv_full(int fd, void *buf, size_t len)
+{
+    size_t off = 0;
+    while (off < len) {
+        ssize_t n = recv(fd, (char *)buf + off, len - off, 0);
+        if (n <= 0)
+            return -1;
+        off += n;
+    }
+    return 0;
+}
+
+/* ============================================================
+ * bluetooth_init
+ * role = 0 : host (server)
+ * role = 1 : client
+ * ============================================================ */
+int bluetooth_init(int role)
+{
+    struct sockaddr_rc addr = {0};
+    bt_role = role;
+
+    if (role == 1) {
+        /* ================= CLIENT ================= */
+        char mac[32] = {0};
+
+        printf("Enter destination MAC (e.g. 00:11:22:33:44:55): ");
+        fflush(stdout);
+        if (scanf("%31s", mac) != 1) {
+            printf("Invalid MAC\n");
+            return -1;
+        }
+
+        bt_fd = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+        if (bt_fd < 0) {
+            perror("socket");
+            return -1;
+        }
+
+        addr.rc_family  = AF_BLUETOOTH;
+        addr.rc_channel = RFCOMM_CHANNEL;
+        str2ba(mac, &addr.rc_bdaddr);
+
+        printf("Connecting to host...\n");
+        if (connect(bt_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            perror("connect");
+            close(bt_fd);
+            bt_fd = -1;
+            return -1;
+        }
+
+        /* ---- send HELLO ---- */
+        BtPacket pkt = {0};
+        pkt.type = BT_MSG_HELLO;
+
+        if (send_full(bt_fd, &pkt, sizeof(pkt)) < 0) {
+            printf("Failed to send HELLO\n");
+            return -1;
+        }
+
+        /* ---- receive ACK ---- */
+        if (recv_full(bt_fd, &pkt, sizeof(pkt)) < 0 ||
+            pkt.type != BT_MSG_ACK) {
+            printf("Handshake failed\n");
+            return -1;
+        }
+
+        /* ---- sync state ---- */
+        srand(pkt.seed);
+        set_start_frame(pkt.start_frame);
+
+        printf("Bluetooth client ready "
+               "(start_frame=%u seed=%u)\n",
+               pkt.start_frame, pkt.seed);
+
+        return 0;
+
+    } else {
+        /* ================= HOST ================= */
+        listen_fd = socket(AF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+        if (listen_fd < 0) {
+            perror("socket");
+            return -1;
+        }
+
+        addr.rc_family  = AF_BLUETOOTH;
+        addr.rc_bdaddr  = *BDADDR_ANY;
+        addr.rc_channel = RFCOMM_CHANNEL;
+
+        if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            perror("bind");
+            close(listen_fd);
+            return -1;
+        }
+
+        if (listen(listen_fd, 1) < 0) {
+            perror("listen");
+            close(listen_fd);
+            return -1;
+        }
+
+        printf("Waiting for Bluetooth client...\n");
+
+        bt_fd = accept(listen_fd, NULL, NULL);
+        close(listen_fd);
+        listen_fd = -1;
+
+        if (bt_fd < 0) {
+            perror("accept");
+            return -1;
+        }
+
+        /* ---- receive HELLO ---- */
+        BtPacket pkt;
+        if (recv_full(bt_fd, &pkt, sizeof(pkt)) < 0 ||
+            pkt.type != BT_MSG_HELLO) {
+            printf("Handshake failed\n");
+            return -1;
+        }
+
+        /* ---- prepare authoritative state ---- */
+        pkt.type        = BT_MSG_ACK;
+        pkt.start_frame = get_current_frame();
+        pkt.seed        = (uint32_t)time(NULL);
+
+        /* ---- send ACK ---- */
+        if (send_full(bt_fd, &pkt, sizeof(pkt)) < 0) {
+            printf("Failed to send ACK\n");
+            return -1;
+        }
+
+        /* ---- apply locally ---- */
+        srand(pkt.seed);
+        set_start_frame(pkt.start_frame);
+
+        printf("Bluetooth host ready "
+               "(start_frame=%u seed=%u)\n",
+               pkt.start_frame, pkt.seed);
+
+        return 0;
+    }
+}
+
+/* ============================================================
+ * Send local input to peer
+ * ============================================================ */
+void bluetooth_send_input(uint32_t frame_id, Input in)
+{
+    BtPacket pkt = {0};
+
+    pkt.type     = BT_MSG_INPUT;
+    pkt.frame_id = frame_id;
+    pkt.xin      = in.xin;
+    pkt.yin      = in.yin;
+
+    send_full(bt_fd, &pkt, sizeof(pkt));
+}
+
+/* ============================================================
+ * Poll incoming packets (blocking)
+ * ============================================================ */
+void bluetooth_poll(void)
+{
+    BtPacket pkt;
+
+    while (1) {
+        if (recv_full(bt_fd, &pkt, sizeof(pkt)) < 0) {
+            printf("Bluetooth disconnected\n");
+            return;
+        }
+
+        if (pkt.type == BT_MSG_INPUT) {
+            Input in;
+            in.xin = pkt.xin;
+            in.yin = pkt.yin;
+            save_remote_input(pkt.frame_id, in);
+        }
+    }
+}
+
+/* ============================================================
+ * Close connection
+ * ============================================================ */
+void bluetooth_close(void)
+{
+    if (bt_fd >= 0) {
+        close(bt_fd);
+        bt_fd = -1;
+    }
+    if (listen_fd >= 0) {
+        close(listen_fd);
+        listen_fd = -1;
+    }
+}

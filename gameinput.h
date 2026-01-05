@@ -5,7 +5,7 @@
 
 typedef void (*TouchCallback)(int x, int y, int type, int finger);
 
-int input_init(const char* touch_device);
+int input_init(char* touch_device);
 
 
 void input_process(void);

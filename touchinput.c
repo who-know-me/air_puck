@@ -19,7 +19,6 @@ static struct finger_info{
 } infos[FINGER_NUM_MAX];
 static int cur_slot = 0;
 
-static Input 
 
 int touch_init(char *dev)
 {
@@ -120,7 +119,7 @@ int touch_read(int touch_fd, int *x, int *y, int *finger)
 
 static int touch_fd = -1;
 
-int input_init(const char* touch_device) {
+int input_init(char* touch_device) {
     touch_fd = touch_init(touch_device);
     return touch_fd;
 }
@@ -138,7 +137,7 @@ void on_touch(int x, int y, int type, int finger) {
 			save_local_input(frame_id, touchinput);  //save input
 
             // 如果蓝牙已连接，发送位置信息
-            if (is_bluetooth_mode) {
+            if (is_bt_mode) {
 				bluetooth_send_input(frame_id, touchinput);
             }
         }
@@ -148,6 +147,9 @@ void on_touch(int x, int y, int type, int finger) {
         if (finger == 0) {
 			touchinput.xin = player1.x; touchinput.yin = player1.y;  // auto stop when finger is released
 			save_local_input(frame_id, touchinput);              
+            if (is_bt_mode) {
+				bluetooth_send_input(frame_id, touchinput);
+            }
         }
         break;
 
@@ -158,7 +160,7 @@ void on_touch(int x, int y, int type, int finger) {
 		touchinput.xin = load_local_input((frame_id -1 + FRAME_RATE) % FRAME_RATE).xin;
 		touchinput.yin = load_local_input((frame_id -1 + FRAME_RATE) % FRAME_RATE).yin;
 		save_local_input(frame_id, touchinput);
-		if(is_bluetooth_mode){
+		if(is_bt_mode){
 			bluetooth_send_input(frame_id, touchinput);
 		}
 		break;

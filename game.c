@@ -16,8 +16,10 @@ int screen_center_x, screen_center_y;
 int field_width, field_height;
 int field_x, field_y;
 
-int frame_id = 0; 
+int frame_id = 0, start_frame; 
 Input local_input_buffer[INPUT_DELAY], remote_input_buffer[INPUT_DELAY]; 
+
+int is_bt_mode = 0;
 
 
 // 获取当前时间（秒）
@@ -92,7 +94,9 @@ void game_init(void) {
     goal2.color = COLOR_GOAL;
 
     // 初始化AI
-    ai_init();
+    if(!is_bt_mode){
+        ai_init();
+    }
 
     last_time = get_current_time();
 }
@@ -162,6 +166,7 @@ void reset_after_goal(void) {
     puck.vx = 5.0f * (rand() % 2 ? 1 : -1);
     puck.vy = 5.0f * (rand() % 2 ? 1 : -1);
 
+
     // 重置玩家位置
     player1.x = field_x + field_width * 0.25f;
     player1.y = screen_center_y;
@@ -176,6 +181,7 @@ void reset_after_goal(void) {
 void game_update(void) {
 
     frame_id  = (frame_id + 1) % FRAME_RATE;  // enter next frame
+    //printf("entering frame %d", frame_id);
 
     float current_time = get_current_time();
     float delta_time = current_time - last_time;         //TODO: substitute this with a fix framerate
@@ -188,6 +194,7 @@ void game_update(void) {
     player1.target_y = load_local_input(frame_id).yin;
     player2.target_x = load_remote_input(frame_id).xin;
     player2.target_y = load_remote_input(frame_id).yin;
+
 
 
 
@@ -230,8 +237,28 @@ void game_update(void) {
         player1.vy = -player1.vy * 0.5f;
     }
 
-    // 更新AI控制（如果不是蓝牙模式）
-    ai_update(delta_time);
+    // v2
+    if(!is_bt_mode){
+        ai_update(delta_time);
+
+    }
+    else{
+        float dx2 = player2.target_x - player2.x;
+        float dy2 = player2.target_y - player2.y;
+        float distance2 = sqrtf(dx2 * dx2 + dy2 * dy2);
+
+        if (distance2 > 0) {
+            dx2 /= distance2;
+            dy2 /= distance2;
+            float speed2 = fminf(distance2, 15.0f);
+            player2.vx = dx2 * speed2;
+            player2.vy = dy2 * speed2;
+        }
+        else {
+            player2.vx *= 0.9f;
+            player2.vy *= 0.9f;
+        }
+    }
 
     // 更新玩家2位置
     player2.x += player2.vx;
@@ -256,6 +283,7 @@ void game_update(void) {
         player2.y = field_y + field_height - player2.radius;
         player2.vy = -player2.vy * 0.5f;
     }
+    //printf("frame %d p2 target %f %f pos %f %f velo %f %f\n", frame_id, player2.target_x, player2.target_y, player2.x, player2.y, player2.vx, player2.vy);
 
     // 更新冰球位置
     puck.x += puck.vx;
@@ -368,24 +396,24 @@ void check_goals(void) {
 
 void save_local_input(int frame_id, Input localin)
 {
-    printf("saving  local input. frame id %5d x %5f y %5f", frame_id, localin.xin, localin.yin);
+    //printf("saving  local input. frame id %5d x %5f y %5f\n", frame_id, localin.xin, localin.yin);
     local_input_buffer[frame_id%INPUT_DELAY] = localin;
 }
 
 void save_remote_input(int frame_id, Input remotein)
 {
-    printf("saving remote input. frame id %5d x %5f y %5f", frame_id, remotein.xin, remotein.yin);
+    //printf("saving remote input. frame id %5d x %5f y %5f\n", frame_id, remotein.xin, remotein.yin);
     remote_input_buffer[frame_id%INPUT_DELAY] = remotein;
 }
 
 Input load_local_input(int frame_id)
 {
-    printf("loading  local input. frame id %5d x %5f y %5f", frame_id, local_input_buffer[frame_id%INPUT_DELAY].xin, local_input_buffer[frame_id%INPUT_DELAY].yin);
+    //printf("loading  local input. frame id %5d x %5f y %5f\n", frame_id, local_input_buffer[frame_id%INPUT_DELAY].xin, local_input_buffer[frame_id%INPUT_DELAY].yin);
     return local_input_buffer[frame_id%INPUT_DELAY];
 }
 
 Input load_remote_input(int frame_id)
 {
-    printf("loading remote input. frame id %5d x %5f y %5f", frame_id, remote_input_buffer[frame_id%INPUT_DELAY].xin, remote_input_buffer[frame_id%INPUT_DELAY].yin);
+    //printf("loading remote input. frame id %5d x %5f y %5f\n", frame_id, remote_input_buffer[frame_id%INPUT_DELAY].xin, remote_input_buffer[frame_id%INPUT_DELAY].yin);
     return remote_input_buffer[frame_id%INPUT_DELAY];
 }

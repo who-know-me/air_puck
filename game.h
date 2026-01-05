@@ -75,7 +75,7 @@ extern int field_x, field_y;
 
 extern int frame_id, start_frame;
 extern Input local_input_buffer[INPUT_DELAY], remote_input_buffer[INPUT_DELAY]; 
-
+extern int is_bt_mode;
 
 void game_init(void);
 
